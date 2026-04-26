@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AILightReport - 登录</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap-icons.css') }}">
+    <style>
+        :root {
+            --light-bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --input-bg: #ffffff;
+            --primary-color: #4e73df;
+            --secondary-color: #6c757d;
+            --text-color: #333333;
+        }
+
+        body {
+            background: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), 
+                        url("{{url_for('static', filename='images/bk.jpg')}}") no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            color: #212529;
+        }
+        
+        .login-container {
+            max-width: 420px;
+            width: 100%;
+        }
+        
+        .login-card {
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(5px);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 2.5rem 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .form-control {
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 1px solid #dee2e6;
+            color: #212529;
+            padding: 0.5rem 1rem;
+            transition: all 0.3s;
+        }
+        
+        .form-control:focus {
+            background-color: #fff;
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+            color: #212529;
+        }
+        
+        .input-group-text {
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 1px solid #dee2e6;
+            color: #6c757d;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .input-group-text:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(to right, #4e73df, #224abe);
+            border: none;
+            padding: 0.75rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary:hover {
+            background: linear-gradient(to right, #3a56c4, #1e40af);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-outline-secondary {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+            background-color: transparent;
+        }
+        
+        .btn-outline-secondary:hover {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: #fff;
+        }
+        
+        .invalid-feedback {
+            display: none;
+            color: #dc3545;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 1.5rem 0;
+        }
+        
+        .divider::before,
+        .divider::after {
+            content: "";
+            flex: 1;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .divider span {
+            padding: 0 1rem;
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6 login-container">
+                <div class="login-card">
+                    <!-- Title -->
+                    <h2 class="text-center mb-4 fw-bold">用户登录</h2>
+                    
+                    <!-- Divider -->
+                    <div class="divider">
+                        <span>请使用账号密码登录</span>
+                    </div>
+                    
+                    <!-- Login Form -->
+                    <form id="loginForm" method="post" role="form">
+                        <!-- 账号输入 -->
+                        <div class="mb-4">
+                            <label for="no" class="form-label fw-medium">账号</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-person"></i></span>
+                                <input type="text" class="form-control" id="no" name="no" placeholder="请输入账号" required>
+                            </div>
+                            <div class="invalid-feedback" id="noError">无效的账号</div>
+                        </div>
+                        
+                        <!-- 密码输入 -->
+                        <div class="mb-4">
+                            <label for="password" class="form-label fw-medium">密码</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-key"></i></span>
+                                <input type="password" class="form-control" maxlength="20" id="password" name="password" placeholder="请输入密码" required>
+                                <span class="input-group-text" id="togglePassword">
+                                    <i class="bi bi-eye-slash" id="passwordIcon"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- 验证码输入 -->
+                        <div class="mb-4" id="captcha" style="display:none">
+                            <label for="verificationCode" class="form-label">验证码</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="bi bi-chat-square-dots"></i></span>
+                                <input type="text" class="form-control" maxlength="4" id="verificationCode" name="verificationCode" placeholder="请输入4位验证码">
+                                <span class="input-group-btn">
+                                    <a id="get-captcha"><img id="img-captcha" width="100" height="42" src="" alt="验证码"></a>
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- 登录按钮 -->
+                        <button type="submit" id="btnLogin" class="btn btn-primary btn-lg w-100 py-2 mt-2 mb-2">登录</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap & jQuery JS -->
+    <script src="{{ url_for('static', filename='bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='jquery-3.6.4.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    
+    <script>
+        $(document).ready(function() {
+            const accountInput = document.getElementById('no');
+            const accountFeedback = document.querySelector('.invalid-feedback');
+
+            // 初始状态隐藏反馈信息
+            accountFeedback.style.display = 'none';
+
+            // 账号验证函数
+            function validateAccountNo(no) {
+                return true ? (no.length >= 5) : false;
+            }
+
+            // 账号验证
+            $('#no').on('blur', function() {
+               if (accountInput.value.trim() !== '') {
+                    if (!validateAccountNo(accountInput.value)) {
+                        accountInput.classList.add('is-invalid');
+                        accountFeedback.style.display = 'block';
+                    } else {
+                        accountInput.classList.remove('is-invalid');
+                        accountInput.classList.add('is-valid');
+                        accountFeedback.style.display = 'none';
+                    }
+                } else {
+                    accountInput.classList.remove('is-invalid', 'is-valid');
+                    accountFeedback.style.display = 'none';
+                }
+            })
+            
+            // 密码显示/隐藏
+            $('#togglePassword').on('click', function() {
+                const passwordInput = $('#password');
+                const passwordIcon = $('#passwordIcon');
+                
+                if (passwordInput.attr('type') === 'password') {
+                    passwordInput.attr('type', 'text');
+                    passwordIcon.removeClass('bi-eye-slash').addClass('bi-eye');
+                } else {
+                    passwordInput.attr('type', 'password');
+                    passwordIcon.removeClass('bi-eye').addClass('bi-eye-slash');
+                }
+            })
+
+            // 首次刷新
+            get_captcha();
+
+            // 获取验证码
+            function get_captcha() {
+                $.ajax({
+                    url: "/get_captcha",
+                    async: false,		//同步模式
+                    method: "GET",
+                    contentType: "image/jpeg",
+                    success: function(result){
+                        var url = "data:image/jpg;base64," + result;
+                        $("#img-captcha").attr("src", url);
+                    }
+                })
+            }
+
+            // 点击时刷新
+            $("#get-captcha").on('click', function(event) {
+                event.preventDefault();
+                get_captcha();
+            })
+            
+            // 表单提交验证
+            $('#loginForm').on('submit', function(event) {
+                event.preventDefault();
+                
+                // 触发账号验证
+                $('#no').trigger('blur');
+                if ($('#no').hasClass('is-invalid')) return false;
+                const no = $('#no').val().trim();
+
+                // 密码不能为空
+                if ($('#password').val().trim() == '') return false;
+                const password = $('#password').val().trim();
+
+                // 四位验证码
+                let verificationCode = '';
+                if ($('#captcha').css('display') == 'block') {
+                    if ($('#verificationCode').val().trim().length < 4) return false;
+                    verificationCode = $('#verificationCode').val().trim();
+                }
+
+                // 请求数据
+                const data = {
+                    "no": no,
+                    "password": password,
+                    "verificationCode": verificationCode
+                }
+                
+                // 禁用提交按钮
+                const btn = document.getElementById('btnLogin');
+                btn.disabled = true;
+                
+                // 发起请求
+                $.ajax({
+                    url: "/login",
+                    data: JSON.stringify(data),
+                    async: true,		//异步模式
+                    method: "POST",
+                    headers: {"Authorization": token},
+                    contentType: "application/json;charset=utf-8",
+                    error: function() {
+                        console.log('调用接口报错:', error);
+                        btn.disabled = false;
+                    },
+                    success: function(result){
+                        if (result.code == 200) {
+                            // 成功
+                            btn.disabled = false;
+
+                            // 跳转到index
+                            window.location.href = "/index";
+                        } else {
+                            // 其它错误
+                            //console.log(result.message);
+                            alert(result.message);
+                            btn.disabled = false;
+                            
+                            // 显示验证码（账号或密码错误时）
+                            if (result.code == 2001) {
+                                $('#captcha').css('display', 'block');
+                            }
+                        }
+                    }
+                })
+            })
+        })
+    </script>
+</body>
+</html>

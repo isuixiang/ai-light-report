@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>页面未找到 - 404错误</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap-icons.css') }}">
+    <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #6c757d;
+            --light-color: #f8f9fc;
+            --dark-color: #5a5c69;
+        }
+        
+        body {
+            background-color: var(--light-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        
+        .error-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .error-code {
+            font-size: 7rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            line-height: 1;
+            margin-bottom: 1rem;
+        }
+        
+        .error-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 1.5rem;
+        }
+        
+        .error-message {
+            color: var(--secondary-color);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+        
+        .error-illustration {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 2rem;
+        }
+        
+        .btn-primary-custom {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            padding: 0.75rem 1.5rem;
+            font-weight: 600;
+        }
+        
+        .btn-primary-custom:hover {
+            background-color: #3a5dcd;
+            border-color: #3a5dcd;
+        }
+        
+        .error-details {
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+        }
+        
+        @media (max-width: 768px) {
+            .error-code {
+                font-size: 5rem;
+            }
+            
+            .error-title {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center align-items-center">
+            <div class="col-lg-6 col-md-8 text-center">
+                <div class="error-container">
+                    <!-- 错误代码 -->
+                    <h1 class="error-code">404</h1>
+                    
+                    <!-- 错误标题 -->
+                    <h2 class="error-title mt-5">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        页面未找到
+                    </h2>
+                    
+                    <!-- 错误信息 -->
+                    <p class="error-message">
+                        抱歉，您正在寻找的页面可能已被移动、删除或不存在。
+                        请检查URL是否正确，或使用下面的按钮返回首页。
+                    </p>
+                    
+                    <!-- 返回首页按钮 -->
+                    <a href="/index" class="btn btn-primary btn-primary-custom">
+                        <i class="bi bi-house-door-fill me-2"></i>
+                        返回首页
+                    </a>
+                    
+                    <!-- 额外信息 -->
+                    <div class="error-details">
+                        <p>
+                            <i class="bi bi-info-circle me-1"></i>
+                            如果您认为这是一个错误，请联系网站管理员。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='bootstrap.bundle.min.js') }}"></script>
+</body>
+</html>

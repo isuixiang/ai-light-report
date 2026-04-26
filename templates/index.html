@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AILightReport - 智能报表制作系统</title>
+	<link rel="shortcut icon" href="{{ url_for('static', filename='images/fav.ico') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap-icons.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='prism.min.css') }}">
+	<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        #tableContainer table {
+            border-collapse: collapse;
+            /*margin-top: 10px;*/
+            width: 100%;
+        }
+        #tableContainer td {
+            border: 1px solid #ccc;
+            padding: 6px 10px;
+            min-width: 80px;
+            outline: none;
+        }
+        #tableContainer td:focus {
+            background-color: #e0f7fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <!--<i class="bi bi-cpu fs-3 me-2"></i>-->
+                    <!--<img class="logo-img me-2" src="{{ url_for('static', filename='images/logo.png')}}">-->
+                    <h1 class="h4 mb-0">LightReport</h1>
+                </div>
+                <div class="d-flex align-items-center">
+                    <!--<button class="btn btn-link text-white" id="themeToggle">
+                        <i class="bi bi-sun-fill fs-5"></i>
+                    </button>-->
+                    <div class="dropdown">
+                        <div class="user-info dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <img src="{{ url_for('static', filename='images/avatar.png') }}" alt="用户头像" class="user-avatar">
+                            <div class="d-none d-md-block">
+                                <span class="user-name">{{user.name}}</span>
+                            </div>
+                        </div>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item small" href="#" data-bs-toggle="modal" data-bs-target="#settingPasswordModal">
+                                    <i class="bi bi-key"></i>
+                                    修改密码
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item small" href="/logout">
+                                    <i class="bi bi-box-arrow-right"></i>
+                                    退出登录
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="content-area">
+            <!-- Left Sidebar -->
+            <div class="sidebar-left">
+                <div class="p-3 border-bottom">
+                    <button class="btn btn-gradient w-100" data-bs-toggle="modal" data-bs-target="#datasourceModal">
+                        <i class="bi bi-plug me-2"></i>连接数据源
+                    </button>
+                </div>
+                
+                <div class="datasource-list">
+                    {% if data.datasource %}
+                    {% for item in data.datasource %}
+                    <div class="datasource-item {% if loop.index==1 %}active{% endif %}" data-id="{{item.id}}" onclick="selectDatasource(this)">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="text-truncate">
+                                <i class="bi bi-database-fill text-primary me-2"></i>
+                                <strong>{{item.name}}</strong>
+                                <div class="small text-muted">{{item.db_type}}://{{item.db_name}}</div>
+                            </div>
+                            <button class="btn btn-sm btn-link" onclick="toggleDataSourceMenu(event, this, '{{item.id}}', '{{item.name}}')">
+                                <i class="bi bi-three-dots-vertical"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="mt-3 text-center">
+                        <img width="48px" src="{{ url_for('static', filename='images/database.png') }}">
+                        <div class="mt-1 text-muted"><small>请添加数据源</small></div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="nav-menu">
+                    <!--<h6 class="text-muted mb-2">导航菜单</h6>-->
+                    <div class="nav-item" data-bs-toggle="modal" data-bs-target="#modelManageModal">
+                        <i class="bi bi-cpu me-2"></i>模型管理
+                    </div>
+                    <div class="nav-item" data-bs-toggle="modal" data-bs-target="#aboutModal">
+                        <i class="bi bi-info-circle me-2"></i>关于系统
+                    </div>
+                </div>
+            </div>
+
+            <!-- Report Area -->
+            <div class="report-area">
+                <div class="p-3 border-bottom">
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="excelTemplateClear()">
+                            <i class="bi bi-x-circle"></i> 清除报表逻辑
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="excelTemplateFullSetting()">
+                            <i class="bi bi-stars"></i> 一键生成逻辑
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="excelTemplateExecute()">
+                            <i class="bi bi-play-circle"></i> 生成报表
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="showOutputExcelModal()">
+                            <i class="bi bi-file-earmark-excel"></i> 查看报表
+                        </button>
+                        <select class="form-select form-select-sm w-auto ms-auto" id="llm">
+                            {% if data.llm %}
+                            {% for item in data.llm %}
+                            {% if item.used==1 %}
+                            <option value="{{item.name}}" selected>{{item.name}}</option>
+                            {% else %}
+                            <option value="{{item.name}}">{{item.name}}</option>
+                            {% endif %}
+                            {% endfor %}
+                            {% else %}
+                            <option value="">未配置模型</option>
+                            {% endif %}
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- 报表定义区 -->
+                <div class="report-setting" id="tableContainer">
+                    <div class="mt-3 text-center">
+                        <img width="48px" src="{{ url_for('static', filename='images/excel.png') }}">
+                        <div class="mt-1 text-muted">请选择模板</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Sidebar -->
+            <div class="sidebar-right">
+                <div class="p-3 border-bottom">
+                    <div class="d-flex gap-1">
+                        <button type="button" class="btn btn-sm btn-outline-primary" title="" onclick="addExcelTemplate()">
+                            <i class="bi bi-plus-circle"></i> 添加模板
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="history-list" id="historyList"></div>
+                
+                <div class="p-3 border-top">
+                    <nav aria-label="历史记录分页">
+                        <ul class="pagination pagination-sm justify-content-center mb-0" id="pagination">
+                            <!--<li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1">&laquo;</a>
+                            </li>
+                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                            <li class="page-item"><a class="page-link" href="#">2</a></li>
+                            <li class="page-item"><a class="page-link" href="#">3</a></li>
+                            <li class="page-item">
+                                <a class="page-link" href="#">&raquo;</a>
+                            </li>-->
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="d-flex justify-content-between align-items-center">
+                <span id="statusText">就绪</span>
+                <span class="text-muted">版本 v1.0</span>
+            </div>
+        </footer>
+
+        <!-- 浮动图标 -->
+        <div class="ai-float-icon" id="aiFloatIcon">
+            <i class="bi bi-robot"></i>
+        </div>
+        
+        <!-- 侧边栏 -->
+        <div class="ai-sidebar" id="aiSidebar">
+            <div class="ai-sidebar-header">
+                <h3><i class="bi bi-robot"></i> AI助手</h3>
+
+                <!-- 下拉标题区域 -->
+                <!--<div class="dropdown-title" id="titleDropdown">
+                    <div class="dropdown-title-selected">
+                        {% for item in data.llm %}
+                            {% if item.used==1 %}
+                            <span class="navbar-title" id="llm">{{item.name}}</span>
+                            {% endif %}
+                        {% endfor %}
+                        <i class="bi bi-chevron-down dropdown-arrow"></i>
+                    </div>
+                    {% if data.llm %}
+                    <div class="dropdown-title-menu">
+                        {% for item in data.llm %}
+                        <div class="dropdown-title-item" data-value="{{item.name}}">
+                            <span>{{item.name}}</span>
+                            <i class="bi bi-check-lg menu-radio"></i>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>-->
+                <button class="close-sidebar" id="closeSidebar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            
+            <div class="ai-chat-container" id="chatContainer">
+                <div class="ai-message assistant">
+                    <div class="ai-message-content">
+                        您好！我是AI报表助手，很高兴为您服务。
+                    </div>
+                </div>
+            </div>
+            
+            <div class="ai-input-container">
+                <button class="ai-send-btn" id="newChatBtn" title="新会话">
+                    <i class="bi bi-plus-lg"></i>
+                </button>
+                <input type="text" class="ai-input" id="messageInput" placeholder="输入您的问题...">
+                <button class="ai-send-btn" id="sendButton" title="发送">
+                    <i class="bi bi-send-fill"></i>
+                </button>
+            </div>
+
+            <!-- 加载动画 -->
+            <div id="chat-loading" style="display:none">
+                <img class="loading-gif" src="{{url_for('static', filename='images/loading.gif')}}" alt="加载动画" />
+            </div>
+        </div>
+        
+        <!-- 背景遮罩 -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    </div>
+
+    <!-- Datasource Add Modal -->
+    <div class="modal fade" id="datasourceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">连接数据源</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+								<label class="form-label">数据源名称</label>
+								<input id="dsname" type="text" class="form-control" maxlength="20" placeholder="数据源名称">
+							</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">数据库类型</label>
+                                <select class="form-select" id="dbtype">
+                                    {% for item in data.dbtype %}
+                                    <option data-port="{{item.port}}" value="{{item.type}}">{{item.type}}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">端口</label>
+                                <input id="dbport" type="number" class="form-control" placeholder="3306">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+							<div class="col-md-6">
+								<label class="form-label">主机地址</label>
+								<input id="dbhost" type="text" class="form-control" placeholder="localhost">
+							</div>
+							<div class="col-md-6">
+                                <label class="form-label">数据库名称</label>
+                                <input id="dbname" type="text" class="form-control" placeholder="数据库名称">
+                            </div>
+						</div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">用户名</label>
+                                <input id="dbuser" type="text" class="form-control" placeholder="数据库用户">
+                            </div>
+							<div class="col-md-6">
+								<label class="form-label">密码</label>
+								<input id="dbpassword" type="password" class="form-control" placeholder="用户密码">
+							</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-gradient" id="btnDsTest">测试连接</button>
+                    <button type="button" class="btn btn-gradient" id="btnDsSave">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Datasource Edit Modal -->
+    <div class="modal fade" id="datasourceEditModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">修改数据源</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+								<label class="form-label">数据源名称</label>
+								<input id="new-dsname" type="text" class="form-control" maxlength="20" placeholder="数据源名称">
+							</div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-gradient" id="btnDsEdit">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Excel Cell Editor Modal -->
+    <div class="modal fade" id="cellEditorModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">报表定义</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input id="row-index" type="hidden" value="">
+                    <input id="col-index" type="hidden" value="">
+                    <textarea class="form-control" rows="12" placeholder="输入报表定义..." id="cell-value"></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-gradient" id="btnExcelSetting">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+	<!-- Model Management Modal -->
+    <div class="modal fade" id="modelManageModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">模型管理</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span>已配置的模型</span>
+                        <button class="btn btn-sm btn-primary" onclick="addModel()">
+                            <i class="bi bi-plus-circle me-1"></i> 添加模型
+                        </button>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>模型名称</th>
+                                    <th>API Key</th>
+                                    <th>是否默认</th>
+                                    <th class="text-center">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in data.llm %}
+                                <tr>
+                                    <td>{{item.name}}</td>
+                                    <td>{{item.mask_apikey}}</td>
+                                    <td>
+                                        {% if item.used==1 %}
+                                        <span class="badge rounded-pill text-bg-primary">是</span>
+                                        {% else %}
+                                        <span class="badge rounded-pill text-bg-secondary">否</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            {% if item.used==0 %}
+                                            <button class="btn btn-sm text-primary" title="设为默认" onclick="setModel(`{{item.id}}`)">
+                                                <i class="bi bi-check2-square"></i>
+                                            </button>
+                                            {% else %}
+                                            <button id="btn-disabled" class="btn btn-sm text-primary" disabled>
+                                                <i class="bi bi-check2-square"></i>
+                                            </button>
+                                            {% endif %}
+                                            <button class="btn btn-sm text-danger" onclick="delModel(`{{item.id}}`)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+	
+	<!-- Model Add Modal -->
+    <div class="modal fade" id="modelAddModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加模型</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">选择模型</label>
+                        <select class="form-select" id="llmname">
+                            {% for item in data.llmtype %}
+                            <option value="{{item.name}}">{{item.name}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">API Key</label>
+                        <input id="apikey" type="text" maxlength="64" class="form-control" placeholder="你申请的APIKey">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-gradient" id="btnLlmSave">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Skills Management Modal -->
+    <div class="modal fade" id="skillsManageModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">技能管理</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span>已添加的技能（只能添加一个主技能，可以添加多个子技能和通用技能）</span>
+                        <button class="btn btn-sm btn-primary" onclick="addSkill()">
+                            <i class="bi bi-plus-circle me-1"></i> 添加技能
+                        </button>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped table-scroll">
+                            <thead>
+                                <tr>
+                                    <th width="100">类型</th>
+                                    <th>名称</th>
+                                    <th>描述</th>
+                                    <th width="120">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="skills-result">
+                                <!--{% for item in data %}
+                                <tr>
+                                    <td>{{item.type}}</td>
+                                    <td>{{item.name}}</td>
+                                    <td>{{item.desc}}</td>
+                                    <td>
+                                        <div class="d-flex gap-1">
+                                            <a href="{{item.filename}}" target="_blank">
+                                                <button class="btn btn-sm text-primary" title="下载">
+                                                    <i class="bi bi-file-earmark-arrow-down"></i>
+                                                </button>
+                                            </a>
+                                            <button class="btn btn-sm text-danger" title="删除" onclick="delSkill(`{{item.id}}`)">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}-->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <!--<div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>-->
+            </div>
+        </div>
+    </div>
+
+    <!-- Skill Add Modal -->
+    <div class="modal fade" id="skillAddModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">添加技能</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">类型</label>
+                        <select class="form-select" id="skill-type">
+                            <option value="" selected>请选择</option>
+                            <option value="1">主技能</option>
+                            <option value="2">子技能</option>
+                            <option value="3">通用技能</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">名称</label>
+                        <input id="skill-name" type="text" maxlength="50" class="form-control" placeholder="请输入技能名称">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">描述</label>
+                        <input id="skill-desc" type="text" maxlength="50" class="form-control" placeholder="请输入技能描述">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">文档</label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="fileInput" accept=".md">
+                            <button class="btn btn-primary" type="button" id="uploadFile">上传</button>
+                        </div>
+                        <div class="form-text">支持Markdown文档格式，文件大小不超过2MB</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-gradient" id="btnSkillSave">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Excel Add/Edit Modal -->
+    <div class="modal fade" id="excelAddModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="excel-headtitle">添加模板</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input id="exceltemplate-id" type="hidden" value="">
+                    <div class="mb-3">
+                        <label class="form-label">名称</label>
+                        <input id="excel-title" type="text" maxlength="50" class="form-control" placeholder="请输入报表名称">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">描述</label>
+                        <input id="excel-desc" type="text" maxlength="100" class="form-control" placeholder="请输入报表描述">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">模板</label>
+                        <div class="input-group">
+                            <input type="file" class="form-control" id="excelFileInput" accept=".xlsx">
+                            <button class="btn btn-primary" type="button" id="uploadExcelFile">上传</button>
+                        </div>
+                        <div class="form-text">Excel模板文件，大小不超过1MB</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-gradient" id="btnExcelSave">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- OutputExcel Modal -->
+    <div class="modal fade" id="outputExcelModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">查看报表</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-scroll">
+                            <thead>
+                                <tr>
+                                    <th>标题</th>
+                                    <th>时间</th>
+                                    <th width="120">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="output-result"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <!--<div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>-->
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Setting Modal -->
+    <div class="modal fade" id="settingPasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">修改密码</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">原密码</label>
+                        <div class="input-group">
+                            <input id="old-password" type="password" maxlength="20" class="form-control" placeholder="请输入原密码">
+                            <span class="input-group-text" id="toggleOldPassword">
+                                <i class="bi bi-eye-slash" id="oldPasswordIcon"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">新密码</label>
+                        <div class="input-group">
+                            <input id="new-password" type="password" maxlength="20" class="form-control" placeholder="请输入新密码">
+                            <span class="input-group-text" id="toggleNewPassword">
+                                <i class="bi bi-eye-slash" id="newPasswordIcon"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                    <button type="button" class="btn btn-gradient" id="btnSettingPassword">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Modal -->
+    <div class="modal fade" id="aboutModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">关于系统</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <h6>AILightReport v1.0</h6>
+                    <p class="text-muted">智能报表制作平台，让报表制作变得简单。</p>
+                    <hr>
+                    <p><strong>开发单位：</strong>上海随享信息技术有限公司</p>
+                    <p><strong>官方网站：</strong>https://www.isuixiang.com</p>
+                    <p><strong>更新日期：</strong>2026年1月</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DataSource Menu Popover -->
+	<div id="datasourceMenu" class="dropdown-menu" style="display:none;position:absolute;">
+        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#skillsManageModal">
+		  <small><i class="bi bi-layers me-2"></i>技能</small>
+		</a>
+        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#datasourceEditModal">
+		  <small><i class="bi bi-pencil me-2"></i>修改</small>
+		</a>
+		<a class="dropdown-item text-danger" href="#" id="deleteDataSource">
+		  <small><i class="bi bi-trash me-2"></i>删除</small>
+		</a>
+	</div>
+
+	<!-- ExcelTemplate Menu Popover -->
+	<div id="excelTemplateMenu" class="dropdown-menu" style="display:none;position:absolute;">
+		<a class="dropdown-item" href="#" id="editExcelTemplate">
+		  <small><i class="bi bi-pencil me-2"></i>更新</small>
+		</a>
+		<a class="dropdown-item text-danger" href="#" id="deleteExcelTemplate">
+		  <small><i class="bi bi-trash me-2"></i>删除</small>
+		</a>
+	</div>
+
+    <!-- 隐藏的值 -->
+    <input id="temp-userid" type="hidden" value="{{user.id}}">
+    <input id="temp-exceltemplate-id" type="hidden" value="">
+    <input id="temp-exceltemplate-title" type="hidden" value="">
+    <input id="temp-exceltemplate-desc" type="hidden" value="">
+    <input id="temp-datasource-id" type="hidden" value="">
+    <input id="temp-datasource-name" type="hidden" value="">
+
+    <!-- 加载动画 -->
+    <div id="loading" style="display:none">
+        <img class="loading-gif" src="{{url_for('static', filename='images/loading.gif')}}" alt="加载动画" />
+    </div>
+    
+    <script src="{{ url_for('static', filename='bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='jquery-3.6.4.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='sql-formatter.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='prism.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='prism-sql.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    <script src="{{ url_for('static', filename='main.js') }}"></script>
+    <script src="{{ url_for('static', filename='modal.js') }}"></script>
+</body>
+</html>
