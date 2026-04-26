@@ -107,6 +107,9 @@ flask run
 - **AI 模型**：DeepSeek / Kimi / Qwen 等
 - **报表处理**：Excel 模板解析
 
+## 网页截图
+![首页](data/home.png)
+
 ## 🤝 参与贡献
 
 欢迎提交 Issue 或 Pull Request。  
