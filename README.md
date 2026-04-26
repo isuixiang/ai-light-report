@@ -4,6 +4,8 @@ LightReport 是一款**轻量级、智能化**的报表工具，基于大语言�
 
 无需复杂配置，支持 Excel / 数据库对接，实现**简单且高效**的报表制作。
 
+![首页](data/home.png)
+
 ## ✨ 核心特性
 
 - **📄 Excel 模板导入**  
@@ -106,9 +108,6 @@ flask run
 - **数据库**：MySQL
 - **AI 模型**：DeepSeek / Kimi / Qwen 等
 - **报表处理**：Excel 模板解析
-
-## 网页截图
-![首页](data/home.png)
 
 ## 🤝 参与贡献
 
