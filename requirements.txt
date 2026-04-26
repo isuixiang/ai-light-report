@@ -1,0 +1,14 @@
+flask>=3.0.3
+flask-cors>=4.0.1
+openai>=1.51.2
+requests>=2.32.3
+flask_sqlalchemy>=3.1.1
+SQLAlchemy>=1.4.54
+PyMySQL>=1.0.2
+pymssql>=2.3.9
+sqlparse>=0.5.3
+PyJWT>=2.8.0
+python-dotenv>=0.21.1
+cryptography>=41.0.1
+markdown>=3.3.6
+mysql-connector-python>=9.2.0
