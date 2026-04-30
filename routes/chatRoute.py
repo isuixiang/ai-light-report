@@ -384,7 +384,7 @@ def chat_executesql():
             return jsonify({'code':Error.NO_MATCH_ROWS, 'message':Error.msg[Error.NO_MATCH_ROWS]})
         
         # 超过记录数限制
-        if results['row_count'] > os.getenv('MAQX_ROWS'):
+        if results['row_count'] > int(os.getenv('MAX_ROWS')):
             return jsonify({'code':Error.OVER_MAX_ROWS, 'message':Error.msg[Error.OVER_MAX_ROWS]})
         
         # 执行成功
